@@ -8,6 +8,7 @@ class Auth{
 		$db_connection = new dbConnection();
 		$this->database_name = $db_connection->database();
 		$this->link = $db_connection->connect();
+		
 		return $this->link;
 	}
 	/**

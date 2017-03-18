@@ -69,16 +69,19 @@ function register(){
 	$name = $_GET['name'];
 	$email = $_GET['email'];
 	$password = $_GET['password'];
-	$date_birth = $_GET['date_birth'];
+	$date_birth = "03/18/2017";//$_GET['date_birth'];
 	$gender = $_GET['gender'];
 	$weight = $_GET['weight'];
 	$user = new users();
 	//Check if they are valid input
-	if($user->valid_validate($email)&&
+	if($user->email_validate($email)&&
 		preg_match("/^[a-zA-Z ]*$/",$name)&&!empty($name)&&
 		!empty($password)&&$user->date_birth_validate($date_birth)&&
 		$user->gender_validate($gender)&&$user->weight_validate($weight)
 	){
+		//Change date of bith format
+		$date_birth = str_replace('/', '-', $date_birth);
+		$date_birth =  date('Y-m-d', strtotime($date_birth));
 		//Add user to database
 		$data  = array(
 			'name'=>$name,
@@ -92,7 +95,7 @@ function register(){
 		//If successful get user token
 		if($result['success']){
 			$auth = new Auth();
-			$data = $auth->create_auth($result['user_id']);
+			$data = $auth->create_auth($result['id']);
 			if($data['success']){
 				$data['message'] = "Successful!";
 				print(json_encode($data));

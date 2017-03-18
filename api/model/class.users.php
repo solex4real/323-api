@@ -89,15 +89,16 @@ class users{
 	*Returns array of success status and user id
 	*/
 	function add_user($data) {
-		$date_created = date ( 'd/m/Y H:i:s' );
+		$date_created = date ( 'Y-m-d H:i:s' );
 		// salt for bcrypt needs to be 22 base64 characters (but just [./0-9A-Za-z]), see http://php.net/crypt
 		$salt = substr(strtr(base64_encode(openssl_random_pseudo_bytes(22)), '+', '.'), 0, 22);
 		$hash = crypt($data['password'], '$2y$12$' . $salt);
 		//Perform Query 
 		$query = $this->link->prepare( "INSERT INTO `users` (`name`,`password`,`salt`,`email`,
 			`date_birth`,`gender`,`weight`,`date_created`) VALUES (?,?,?,?,?,?,?,?)" );
-		$query->execute($data['name'],$hash,$salt,$data['email'],$data['date_birth'],
+		$values = array($data['name'],$hash,$salt,$data['email'],$data['date_birth'],
 			$data['gender'],$data['weight'],$date_created);
+		$query->execute($values);
 		if ($query->rowCount () > 0) {
 			return array("success"=>true,
 				"id"=>$this->link->lastInsertId());

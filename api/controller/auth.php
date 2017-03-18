@@ -29,7 +29,10 @@ include_once('../model/auth.php');
 	
 //Test token for valid key
 function test(){
-	echo $GLOBALS['user_id'];
+	$date = '03/12/2010';
+	$date = str_replace('/', '-', $date);
+	echo date('Y-m-d', strtotime($date));
+	//echo $GLOBALS['user_id'];
 }
 	
 	

@@ -7,7 +7,7 @@ class dbconnection{
 	public $db_pass = '27595MrtXZv';
 	public $db_host = 'localhost';
 	//Base url
-	public $base_url = 'http://localhost/wms-api/api';
+	public $base_url = 'http://localhost/323-api/api';
 	public $options = array(
 		PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
 	);
