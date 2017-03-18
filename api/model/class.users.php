@@ -20,11 +20,11 @@ class users{
 	
 	/**
 	*Login validation 
-	*Requires username and password and returns true if valid
+	*Requires email and password and returns true if valid
 	*/
-	function can_log_in($username, $password) {
-		$query = $this->link->prepare("SELECT `password`, `salt` FROM `users` WHERE `username` = :username");
-		$query->bindParam(':username',$username);
+	function can_log_in($email, $password) {
+		$query = $this->link->prepare("SELECT `password`, `salt` FROM `users` WHERE `email` = :email");
+		$query->bindParam(':email',$email);
 		$query->execute();
 		if ($query->rowCount () > 0) {
 			//Check password with bycrpt and salt
@@ -39,24 +39,6 @@ class users{
 		} else {
 			return false;
 		}
-	}
-	
-	//Validates username if valid and does not exist in database 
-	function username_validate($username) {
-		$query = $this->link->prepare( "SELECT * FROM `users` WHERE `username` = :username");
-		$query->bindParam(':username',$username);
-		$query->execute();
-		if ($query->rowCount() > 0) {
-			return false;
-		}
-		// each array entry is an special char allowed
-		// besides the ones from ctype_alnum
-		$allowed = array(".", "-", "_");
-		//Check if it is a valid username
-		  if ( ctype_alnum( str_replace($allowed, '', $username ) ) ) {
-			return true;
-		} 
-		return false;
 	}
 	
 	//Check if email exist for validation
@@ -74,23 +56,48 @@ class users{
 		return true;
 	}
 	
+	//Check if weight(lbs) if valid
+	function weight_validate($weight){
+		if(is_numeric($weight)&&!empty($weight)){
+			if($weight > 20 && $weight < 1000){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	//Check for valid gender 0 = female, 1 = male
+	function gender_validate($gender){
+		if(is_numeric($gender)){
+			if($gender == 1 || $gender == 0){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	//Validate date of birth
+	function date_birth_validate($date, $format = 'm/d/Y'){
+		$d = DateTime::createFromFormat($format, $date);
+		return $d && $d->format($format) == $date;
+	}
+	
 	/**
 	*Add new user to database
 	*Parameter: data array
-	*contains: name, username, password, email and phone
+	*contains: name, gender, password, email, weight and date of birth(date_birth)
 	*Returns array of success status and user id
 	*/
 	function add_user($data) {
-		$date_created = date ( 'd/m/Y H:i' );
-		$date_modified = date ( 'd/m/Y H:i' );
+		$date_created = date ( 'd/m/Y H:i:s' );
 		// salt for bcrypt needs to be 22 base64 characters (but just [./0-9A-Za-z]), see http://php.net/crypt
 		$salt = substr(strtr(base64_encode(openssl_random_pseudo_bytes(22)), '+', '.'), 0, 22);
 		$hash = crypt($data['password'], '$2y$12$' . $salt);
 		//Perform Query 
-		$query = $this->link->prepare( "INSERT INTO `users` (`name`,`username`,`password`,`salt`,`email`,
-			`phone`,`date_created`,`date_modified`) VALUES (?,?,?,?,?,?,?,?)" );
-		$query->execute($data['name'],$data['username'],$hash,$salt,$data['email'],$data['phone'],
-			$date_created,$date_modified);
+		$query = $this->link->prepare( "INSERT INTO `users` (`name`,`password`,`salt`,`email`,`gender`,`weight`,
+			`date_birth`,`date_modified`) VALUES (?,?,?,?,?,?,?,?)" );
+		$query->execute($data['name'],$hash,$salt,$data['email'],$data['gender'],$data['weight'],
+			$date_birth,$date_modified);
 		if ($query->rowCount () > 0) {
 			return array("success"=>true,
 				"id"=>$this->link->lastInsertId());
@@ -101,12 +108,12 @@ class users{
 	
 	/**
 	*Get user data from database
-	*Requires user id or username
+	*Requires user id or email
 	*/
-	function get_user($id='',$username='') {
-		$query = $this->link->prepare("SELECT * FROM users WHERE `id` = :id OR `username` = :username");
+	function get_user($id='',$email='') {
+		$query = $this->link->prepare("SELECT * FROM users WHERE `id` = :id OR `email` = :email");
 		$query->bindParam(':id',$id);
-		$query->bindParam(':username',$username);
+		$query->bindParam(':email',$email);
 		$query->execute();
 		if ($query->rowCount () > 0) {
 			return $query->fetch();
@@ -219,14 +226,13 @@ class users{
 		//Initailize return data	
 		$data = array('success'=>false);
 		//Get user's name and id
-		$query = $this->link->prepare("SELECT `name`, `username`, `id` FROM `users` WHERE `email` = :email");
+		$query = $this->link->prepare("SELECT `name`, `id` FROM `users` WHERE `email` = :email");
 		$query->bindParam(':email',$email);
 		$query->execute();
 		//If email if valid, fetch user data
 		if($query->rowCount() > 0){
 			$result = $query->fetch();
 			$name = $result['name'];
-			$username = $result['username'];
 			$id = $result['id'];
 			//Check database for existing password recovery/link id
 			$query = $this->link->prepare("SELECT * FROM `forgot_password` WHERE `user_id` = :id");
@@ -337,7 +343,7 @@ class users{
 	
 	/**
 	* Send email to user to recover password
-	* requires array data of name, username,
+	* requires array data of name,
 	* email, and recovery/link id
 	*/
 	function send_recovery_id($data){
@@ -348,14 +354,12 @@ class users{
 		$email = $data['email'];
 		//Define email parameters
 		$to  = $email;
-		$subject = 'Password Recovery';
-		$headers = 'From: services@whosmyserver.com' . "\r\n" .
-			'Reply-To: services@whosmyserver.com' . "\r\n" .
+		$subject = '323 World Password Recovery';
+		$headers = 'From: services@323world.com' . "\r\n" .
+			'Reply-To: services@323world.com' . "\r\n" .
 			'X-Mailer: PHP/' . phpversion();
 		$message = "Hi ".$name."\n\n".
-		"Use the link below to reset your password\n".
-		$this->base_url."main/recover_password/".$id."/".$link_id."\n".
-		"or enter this id on your mobile app: ".$link_id;
+		"Enter this id on your mobile app to reset your password: ".$link_id;
 		if(mail($to, $subject, $message, $headers)){
 			return true;
 		}
