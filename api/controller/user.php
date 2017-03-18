@@ -16,30 +16,35 @@ include_once('../model/auth.php');
 		
 }
 
-//Check is email exist; return true/1 if it does
+//Check is usermane exist; return true/1 if it does
+function username_validate(){
+	$username = $_GET['username'];
+	$user = new users();
+	print($user->username_validate($username));
+}
+
+//Check is usermane exist; return true/1 if it does
 function email_validate(){
 	$email = $_GET['email'];
 	$user = new users();
 	print($user->email_validate($email));
 }
 
-
-
 /**
 *User login
-*Requires email and password
+*Requires username and password
 *returns json data of success and token/key if 
 *user can login
 *i.e {'success':true,'key':'dgiuUjed978'}
-*Key will be used instead of user_id or email and password 
+*Key will be used instead of user_id or username and password 
 */
 function login(){
-	$email = $_GET['email'];
+	$username = $_GET['username'];
 	$password = $_GET['password'];
-	if(!empty($email)&&!empty($password)){
+	if(!empty($username)&&!empty($password)){
 		$user = new users();
-		if($user->can_log_in($email,$password)){
-			$result = $user->get_user(null, $email);
+		if($user->can_log_in($username,$password)){
+			$result = $user->get_user(null, $username);
 			//Create new auth
 			$auth = new Auth();
 			$data = $auth->create_auth($result['id']);
@@ -52,7 +57,7 @@ function login(){
 			}
 		}else{
 			print(json_encode(array('success'=>false,
-				'message'=>"Invalid Email or Password")));
+				'message'=>"Invalid Username and Password")));
 		}
 	}else{
 		print(json_encode(array('success'=>false,
@@ -64,31 +69,29 @@ function login(){
 *Register user
 *And return success status and token
 *i.e {'success':true,'key':'dgiuUjed978'}
-*Key will be used instead of user_id or email and password 
+*Key will be used instead of user_id or username and password 
 */
 function register(){
 	//Request data from client
 	$name = $_GET['name'];
+	$username = $_GET['username'];
 	$password = $_GET['password'];
 	$email = $_GET['email'];
-	$gender = $_GET['gender'];
-	$weight = $_GET['weight'];
-	$date_birth = $_GET['date_birth'];
+	$phone = $_GET['phone'];
 	$user = new users();
 	//Check if they are valid input
-	if($user->valid_validate($email)&&!empty($email)&&
+	if($user->username_validate($username)&&!empty($username)&&
+		$user->valid_validate($email)&&!empty($email)&&
 		preg_match("/^[a-zA-Z ]*$/",$name)&&!empty($name)&&
-		!empty($password)&&$user->gender_validate($gender)&&
-		$user->weight_validate($weight)&&$user->date_birth_validate($date_birth)
+		!empty($password)&&!empty($phone)
 	){
 		//Add user to database
 		$data  = array(
+			'username'=>$username,
 			'name'=>$name,
 			'password'=>$password,
 			'email'=>$email,
-			'gender'=>$gender,
-			'weight'=>$weight,
-			'date_birth'=>$date_birth
+			'phone'=>$phone
 		);
 		$result = $user->add_user($data);
 		//If successful get user token
