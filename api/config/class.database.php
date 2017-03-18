@@ -2,9 +2,9 @@
 
 class dbconnection{
 	protected $db_conn;
-	public $db_name = 'wmsdata';
-	public $db_user = 'solex';
-	public $db_pass = '500gram';
+	public $db_name = '323data';
+	public $db_user = 'user_app';
+	public $db_pass = '27595MrtXZv';
 	public $db_host = 'localhost';
 	//Base url
 	public $base_url = 'http://localhost/wms-api/api';
